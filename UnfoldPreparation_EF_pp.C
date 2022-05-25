@@ -7,7 +7,7 @@ f->GetObject(strL.Data(),ali);
 
 //Get the response matrix in THn format
 
-THnSparseD* RM_thn = static_cast<THnSparseD*>(ali->FindObject(Form("ResponseMatrix_R%d_0",int(Rjet*100))));
+THnSparseD* RM_thn = static_cast<THnSparseD*>(ali->FindObject(Form("ResponseMatrix_R%03d_0",int(Rjet*100))));
 
 // Two dimensional unfolding (Dpt vs Pt on Gen and Det level)
 const Int_t ndim =4;
@@ -21,34 +21,36 @@ Int_t iDpt_det = 3;
 //These are the original(before rebinning) projections of the THnSparse which encapsulates the respose. Maybe I don't need
 //to project but instead I can just take the calculated 2D histograms
 TH2D *Dpt_pt_true = dynamic_cast<TH2D*>(RM_thn->Projection(iDpt_gen,iPt_gen,"E"));
-Dpt_pt_true->SetName(Form("DeltaPt_Pt_gen_R%d",int(Rjet*100)));
+Dpt_pt_true->SetName(Form("DeltaPt_Pt_gen_R%03d",int(Rjet*100)));
 TH2D *Dpt_pt_meas = dynamic_cast<TH2D*>(RM_thn->Projection(iDpt_det,iPt_det,"E"));
-Dpt_pt_meas->SetName(Form("DeltaPt_Pt_det_R%d",int(Rjet*100)));
+Dpt_pt_meas->SetName(Form("DeltaPt_Pt_det_R%03d",int(Rjet*100)));
 
 //Setting bin configuration for Measured & True
 
-Double_t pt_min = PT_MIN; // Low Pt limit for detector level, Perhaps we can change this to evaluate systematics
-Double_t pt_min_gen = PT_MIN;// Low Pt limit for generator level
-Double_t Dpt_min = DPT_MIN; //Low Dpt limit for detector level
+Double_t pt_min = PT_MIN; // Lower Pt limit for detector level, Perhaps we can change this to evaluate systematics
+Double_t pt_max = 150.0;  //Upper Pt limit for detector level (Gen level is higher by 10 GeV (feed-in effect)).
+Double_t pt_min_gen = PT_MIN;// Lower Pt limit for generator level
+Double_t Dpt_min = DPT_MIN; //Lower Dpt limit for detector level
+Double_t Dpt_max =50.; //Upper Dpt limit for detector level(Gen level is higher by 5 GeV (feed-in effect))
 
       //Detector, Particle level
 Int_t nPtBinWidth[2] = {5,5};
 Double_t ptmin[2] = {pt_min,pt_min_gen};
-Double_t ptmax[2] = {100.,100.};
+Double_t ptmax[2] = {pt_max, pt_max+10};
 Int_t nBinPt[2] = {int(ptmax[0]-ptmin[0])/nPtBinWidth[0],int(ptmax[1]-ptmin[1])/nPtBinWidth[1]};
 
      //Detector, Particle level
 Int_t nDptBinWidth[2] = {1,1};
 Double_t Dptmin[2] = {Dpt_min ,Dpt_min};
-Double_t Dptmax[2] = {40.,40.};
+Double_t Dptmax[2] = {Dpt_max,Dpt_max+5.};
 Int_t nBinDpt[2] = {int(Dptmax[0]-Dptmin[0])/nDptBinWidth[0],int(Dptmax[1]-Dptmin[1])/nDptBinWidth[1]};
 
 //Rebining the Detector level axes
-TH2D *h2Dpt_Rebined_Meas = new TH2D(Form("h2Dpt_Rebined_Meas_R%d",int(Rjet*100)),Form("#DeltaP_{t} distribution R =%.2f (Detector level -Rebinned);P_{t} (GeV/c);#DeltaP_{t} (GeV/c)",Rjet),nBinPt[0],ptmin[0],ptmax[0],nBinDpt[0],Dptmin[0],Dptmax[0]);
+TH2D *h2Dpt_Rebined_Meas = new TH2D(Form("h2Dpt_Rebined_Meas_R%03d",int(Rjet*100)),Form("#DeltaP_{t} distribution R =%.2f (Detector level -Rebinned);P_{t} (GeV/c);#DeltaP_{t} (GeV/c)",Rjet),nBinPt[0],ptmin[0],ptmax[0],nBinDpt[0],Dptmin[0],Dptmax[0]);
 //Rebining the Particle level axes
-TH2D *h2Dpt_Rebined_True = new TH2D(Form("h2Dpt_Rebined_True_R%d",int(Rjet*100)),Form("#DeltaP_{t} distribution R =%.2f (Generator level -Rebinned);P_{t} (GeV/c);#DeltaP_{t} (GeV/c)",Rjet),nBinPt[1],ptmin[1],ptmax[1],nBinDpt[1],Dptmin[1],Dptmax[1]);
+TH2D *h2Dpt_Rebined_True = new TH2D(Form("h2Dpt_Rebined_True_R%03d",int(Rjet*100)),Form("#DeltaP_{t} distribution R =%.2f (Generator level -Rebinned);P_{t} (GeV/c);#DeltaP_{t} (GeV/c)",Rjet),nBinPt[1],ptmin[1],ptmax[1],nBinDpt[1],Dptmin[1],Dptmax[1]);
 //Feed-out Response
-TH2D *h2Dpt_miss = new TH2D(Form("h2Dpt_miss_R%d",int(Rjet*100)),Form("h2Dpt_miss_R =%.2f",Rjet),nBinPt[1],ptmin[1],ptmax[1],nBinDpt[1],Dptmin[1],Dptmax[1]);
+TH2D *h2Dpt_miss = new TH2D(Form("h2Dpt_miss_R%03d",int(Rjet*100)),Form("h2Dpt_miss_R =%.2f",Rjet),nBinPt[1],ptmin[1],ptmax[1],nBinDpt[1],Dptmin[1],Dptmax[1]);
 
 //Now that the dimensions and binning configurations of the new 2D distributions at the two levels are defined, it's time to fill the histograms
 //First the detector level histogram
@@ -94,7 +96,7 @@ for(Int_t ix=1;ix<=h2Dpt_Rebined_Meas->GetNbinsX();ix++){
 
 //And now create the RooUnfoldResponse object and fill it
     //response object for RooUnfold
-    RooUnfoldResponse *fResponse = new RooUnfoldResponse(Form("Response_R%d",int(Rjet*100)),"RM");
+    RooUnfoldResponse *fResponse = new RooUnfoldResponse(Form("Response_R%03d",int(Rjet*100)),"RM");
     fResponse->Setup(h2Dpt_Rebined_Meas,h2Dpt_Rebined_True);
   
     //Fill RooUnfoldResponse object
@@ -120,9 +122,9 @@ for(Int_t ix=1;ix<=h2Dpt_Rebined_Meas->GetNbinsX();ix++){
   
     delete [] coord;
 
-    TFile *fout = new TFile(Form("ResponseMatrix_ppMC_ptmin%d_Dptmin%d.root",int(PT_MIN),int(DPT_MIN)),"UPDATE");
+    TFile *fout = new TFile(Form("ResponseMatrix_ppMC_smallR_ptmin%d_Dptmin%d.root",int(PT_MIN),int(DPT_MIN)),"UPDATE");
     RM_thn->Write();
-    fResponse->Write(Form("Response_R%d",int(Rjet*100)));
+    fResponse->Write(Form("Response_R%03d",int(Rjet*100)));
     Dpt_pt_meas->Write(Dpt_pt_meas->GetName(),TObject::kOverwrite);
     Dpt_pt_true->Write(Dpt_pt_true->GetName(),TObject::kOverwrite);
     h2Dpt_Rebined_Meas->Write(h2Dpt_Rebined_Meas->GetName(),TObject::kOverwrite);
